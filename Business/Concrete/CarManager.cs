@@ -1,11 +1,17 @@
 ﻿using Business.Abstract;
 using Business.Constants;
+using Business.ValidationRules.FluentValidation;
+using Core.Aspects.Autofac.Validation;
+using Core.CrossCuttingConcerns.Validation;
+using Core.Utilities.Business;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities;
 using Entities.DTOs;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Business.Concrete
@@ -18,11 +24,15 @@ namespace Business.Concrete
             _carDal = carDal;
         }
 
+        [ValidationAspect(typeof(CarValidator))]
         public IResult Add(Car car)
         {
-            if (car.CarName.Length<2 || car.DailyPrice<1)
+            //ValidationTool.Validate(new CarValidator(), car);
+
+            IResult result = BusinessRules.Run(CheckIfCarNameExist(car.CarName));
+            if (result != null)
             {
-                return new ErrorResult(Messages.CarNameInvalid);
+                return result;
             }
             _carDal.Add(car);
             return new SuccessResult(Messages.CarAdded);
@@ -63,6 +73,17 @@ namespace Business.Concrete
         {
             _carDal.Update(car);
             return new SuccessResult(Messages.CarUpdated);
+        }
+
+        private IResult CheckIfCarNameExist(string carName)
+        {
+            var result = _carDal.GetAll(c => c.CarName == carName).Any();
+            if (result)
+            {
+                return new ErrorResult(Messages.CarNameAlreadyExist);
+            }
+            return new SuccessResult();
+
         }
     }
 }
