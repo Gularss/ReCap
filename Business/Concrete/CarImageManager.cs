@@ -10,6 +10,7 @@ using Entities.Concrete;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Business.Concrete
@@ -56,8 +57,8 @@ namespace Business.Concrete
 
         public IDataResult<List<CarImage>> GetCarImagesByCarId(int carId)
         {
-            
-            return new SuccessDataResult<List<CarImage>>(_carImageDal.GetAll(c=>c.CarId==carId),Messages.CarImageListed);
+
+            return new SuccessDataResult<List<CarImage>>(CheckIfCarImageNull(carId));
         }
 
         [ValidationAspect(typeof(CarImageValidator))]
@@ -78,6 +79,17 @@ namespace Business.Concrete
                 return new SuccessResult();
             }
             return new ErrorResult(Messages.CarImagesCountError);
+        }
+
+        private List<CarImage> CheckIfCarImageNull(int carId)
+        {
+            string path = @"\Images\logo.jpg";
+            var result = _carImageDal.GetAll(c => c.CarId == carId).Any();
+                if (!result)
+            {
+                return new List<CarImage> { new CarImage { CarId = carId, ImagePath = path, Date = DateTime.Now } };
+            }
+            return _carImageDal.GetAll(p => p.CarId == carId);
         }
     }
 }
